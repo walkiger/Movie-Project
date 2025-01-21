@@ -1,6 +1,7 @@
 import json
 from .istorage import IStorage
 
+
 class StorageJson(IStorage):
     """
     A class to represent storage for movies using JSON format.
@@ -13,6 +14,7 @@ class StorageJson(IStorage):
         :param file_path: Path to the JSON file.
         """
         self.file_path = file_path
+
 
     def validate_existence(self):
         """
@@ -27,6 +29,7 @@ class StorageJson(IStorage):
             print("File does not exist, creating default data")
             self.write_default_data()
             return False
+
 
     def validate_data(self) -> bool:
         """
@@ -46,6 +49,7 @@ class StorageJson(IStorage):
                 return False
         return False
 
+
     def write_default_data(self):
         """
         Write default data to the JSON file.
@@ -57,6 +61,7 @@ class StorageJson(IStorage):
         }]
         with open(self.file_path, "w") as file_writer:
             json.dump(default_data, file_writer, indent=4)
+
 
     def list_movies(self):
         """
@@ -77,6 +82,7 @@ class StorageJson(IStorage):
                     }
         return movies
 
+
     def add_movie(self, title, year, rating, poster):
         """
         Add a new movie to the JSON file.
@@ -90,6 +96,7 @@ class StorageJson(IStorage):
         movies[title] = {"year": year, "rating": rating, "poster": poster}
         self._save_movies(movies)
 
+
     def delete_movie(self, title):
         """
         Delete a movie from the JSON file.
@@ -100,6 +107,7 @@ class StorageJson(IStorage):
         if title in movies:
             del movies[title]
             self._save_movies(movies)
+
 
     def update_movie(self, title, rating):
         """
@@ -112,6 +120,7 @@ class StorageJson(IStorage):
         if title in movies:
             movies[title]["rating"] = rating
             self._save_movies(movies)
+
 
     def _save_movies(self, movies):
         """

@@ -15,6 +15,7 @@ class StorageCsv(IStorage):
         """
         self.file_path = file_path
 
+
     def validate_existence(self):
         """
         Validate if the CSV file exists.
@@ -28,6 +29,7 @@ class StorageCsv(IStorage):
             print("File does not exist, creating default data")
             self.write_default_data()
             return False
+
 
     def validate_data(self) -> bool:
         """
@@ -48,6 +50,7 @@ class StorageCsv(IStorage):
                 return False
         return False
 
+
     def write_default_data(self):
         """
         Write default data to the CSV file.
@@ -60,6 +63,7 @@ class StorageCsv(IStorage):
             writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(default_data)
+
 
     def list_movies(self):
         """
@@ -92,6 +96,7 @@ class StorageCsv(IStorage):
         movies = self.list_movies()
         movies[title] = {"year": year, "rating": rating, "poster": poster}
         self._save_movies(movies)
+
 
     def delete_movie(self, title):
         """

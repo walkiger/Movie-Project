@@ -1,5 +1,6 @@
 import random
 import statistics
+import requests
 
 
 class MovieApp:
@@ -24,55 +25,69 @@ class MovieApp:
             movie_year = details.get("year", "N/A")
             print(f"{movie_name} ({movie_year}): {movie_rating}")
 
+    import requests
 
     def _command_add_movie(self):
         """
-        Prompt the user to add a new movie to the storage.
+        Prompt the user to enter a movie title, fetch details from the OMDb API,
+        and save the movie details in the data structure.
         """
-        while True:
-            user_input_movie_title = input("Enter a movie title: ")
-            if user_input_movie_title == "":
-                print("Movie name can't be empty")
+        movie_title = input("Enter movie title: ").strip()
+        api_key = "4bebaea"
+        base_url = "http://www.omdbapi.com/"
+        params = {
+            "apikey": api_key,
+            "t": movie_title
+        }
+
+        response = requests.get(base_url, params=params)
+
+        if response.status_code == 200:
+            movie_data = response.json()
+            if movie_data["Response"] == "True":
+                # Handle 'N/A' value for the rating
+                rating = movie_data["imdbRating"]
+                if rating == "N/A":
+                    rating = None  # or you can set a default value like 0.0
+
+                self._storage.add_movie(
+                    movie_data["Title"],
+                    int(movie_data["Year"]),
+                    float(rating) if rating is not None else 0.0,  # Use 0.0 or another default value if rating is None
+                    movie_data["Poster"]
+                )
+                print(f"Movie '{movie_data['Title']}' added successfully!")
             else:
-                break
-
-        try:
-            while True:
-                try:
-                    user_input_release_year = int(input("Enter movie release year: "))
-                    break
-                except ValueError:
-                    print("Invalid input, try again.")
-
-            while True:
-                try:
-                    user_input_movie_rating = float(input("Enter movie rating (1-10): "))
-                    break
-                except ValueError:
-                    print("Invalid input, try again.")
-
-            user_input_movie_poster = input("Enter movie poster URL: ")
-
-            self._storage.add_movie(user_input_movie_title, user_input_release_year, user_input_movie_rating,
-                                    user_input_movie_poster)
-            print(f"Movie {user_input_movie_title} successfully added")
-        except Exception as e:
-            print(e)
+                print(f"Movie not found: {movie_title}")
+        else:
+            print(f"Error: Unable to access the OMDb API. Status code: {response.status_code}")
 
 
     def _command_delete_movie(self):
         """
-        Prompt the user to delete a movie from the storage.
+        Prompt the user to enter a movie title to delete it from the storage.
         """
         movies = self._storage.list_movies()
-        movie_titles = [movie["title"] for movie in movies]
-        user_input_movie_name = input("Enter name of movie you want to delete: ")
+        if not movies:
+            print("No movies available to delete.")
+            return
 
-        if user_input_movie_name in movie_titles:
-            self._storage.delete_movie(user_input_movie_name)
-            print(f"Movie {user_input_movie_name} successfully deleted!")
-        else:
-            print(f"Movie {user_input_movie_name} doesn't exist!")
+        movie_titles = list(movies.keys())
+        for index, title in enumerate(movie_titles, start=1):
+            print(f"{index}. {title}")
+
+        while True:
+            try:
+                selected_index = int(input("Enter the number of the movie you want to delete: ")) - 1
+                if selected_index < 0 or selected_index >= len(movie_titles):
+                    raise IndexError
+
+                selected_title = movie_titles[selected_index]
+                self._storage.delete_movie(selected_title)
+                print(f"Movie '{selected_title}' deleted successfully!")
+                break
+            except (ValueError, IndexError):
+                print("Invalid input. Please enter a valid number corresponding to the movie.")
 
 
     def _command_update_movie(self):
