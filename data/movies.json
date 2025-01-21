@@ -1,1 +1,8 @@
-[]
+[
+    {
+        "title": "Pulp Fiction",
+        "year": 1994,
+        "rating": 10.0,
+        "poster": "https://www.imdb.com/title/tt0110912/mediaviewer/rm4065424384/?ref_=ext_shr_lnk"
+    }
+]
