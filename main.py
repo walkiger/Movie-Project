@@ -1,12 +1,16 @@
-import movie_storage, statistics, random
+import statistics, random
+from storage.storage_json import StorageJson
+
+# Initialize StorageJson with the path to the JSON file
+storage = StorageJson('data/movies.json')
 
 
 def list_movies():
     """
-    Gets data from movie_storage.get_movies_data() and prints out
-    all the movies currently existing in movie_database.json
+    Gets data from storage.list_movies() and prints out
+    all the movies currently existing in the JSON file.
     """
-    movies = movie_storage.get_movies_data()
+    movies = storage.list_movies()
     print(f"{len(movies)} movies in total")
     for movie in movies:
         movie_name = movie["title"]
@@ -18,15 +22,16 @@ def list_movies():
 def add_movie():
     """
     Asks user for multiple inputs, checks if they are valid.
-    If not user is prompted to type again until its valid.
-    Then the inputs get parsed to movie_storage.write_movie_data()
+    If not, user is prompted to type again until it's valid.
+    Then the inputs are passed to storage.add_movie().
     """
     while True:
-        user_input_movie_title = input("Enter a movie Title: ")
+        user_input_movie_title = input("Enter a movie title: ")
         if user_input_movie_title == "":
             print("Movie name can't be empty")
         else:
             break
+
     try:
         while True:
             try:
@@ -34,31 +39,35 @@ def add_movie():
                 break
             except ValueError:
                 print("Invalid input, try again.")
+
         while True:
             try:
                 user_input_movie_rating = float(input("Enter movie rating (1-10): "))
                 break
             except ValueError:
                 print("Invalid input, try again.")
+
+        user_input_movie_poster = input("Enter movie poster URL: ")
+
+        storage.add_movie(user_input_movie_title, user_input_release_year, user_input_movie_rating,
+                          user_input_movie_poster)
+        print(f"Movie {user_input_movie_title} successfully added")
     except Exception as e:
         print(e)
-
-    movie_storage.write_movie_data(user_input_movie_title, user_input_release_year, user_input_movie_rating)
-    print(f"Movie {user_input_movie_title} successfully added")
 
 
 def delete_movie():
     """
     Asks user for movie to delete.
-    Then parses the string to movie_storage.delete_movie_data()
-    If movie doesn't exist it lets the user know.
+    Then parses the string to storage.delete_movie().
+    If movie doesn't exist, it lets the user know.
     """
-    movies = movie_storage.get_movies_data()
+    movies = storage.list_movies()
     movie_titles = [movie["title"] for movie in movies]
     user_input_movie_name = input("Enter name of movie you want to delete: ")
 
     if user_input_movie_name in movie_titles:
-        movie_storage.delete_movie_data(user_input_movie_name)
+        storage.delete_movie(user_input_movie_name)
         print(f"Movie {user_input_movie_name} successfully deleted!")
     else:
         print(f"Movie {user_input_movie_name} doesn't exist!")
@@ -67,10 +76,10 @@ def delete_movie():
 def update_movie():
     """
     Asks user for movie name to update.
-    If movie exist in database user is prompted to enter a new rating.
-    If movie doesn't exist prints an error message.
+    If movie exists in database, user is prompted to enter a new rating.
+    If movie doesn't exist, prints an error message.
     """
-    movies = movie_storage.get_movies_data()
+    movies = storage.list_movies()
     movie_titles = [movie["title"] for movie in movies]
     user_input_movie_name = input("Enter name of movie you want to update: ")
 
@@ -78,8 +87,8 @@ def update_movie():
         while True:
             try:
                 user_input_new_rating = float(input("Enter new movie rating: "))
-                movie_storage.update_movie_data(user_input_movie_name, user_input_new_rating)
-                print("rating successfully changed!")
+                storage.update_movie(user_input_movie_name, user_input_new_rating)
+                print("Rating successfully changed!")
                 break
             except ValueError:
                 print("Please enter a valid rating")
@@ -93,7 +102,7 @@ def movie_stats():
     Also identifies the worst and best movies and saves them to a list.
     Then parses both lists to print_list_of_tuple function to get a printable string.
     """
-    movies = movie_storage.get_movies_data()
+    movies = storage.list_movies()
     rating_list = [float(movie["rating"]) for movie in movies]
 
     average_rating = sum(rating_list) / len(rating_list)
@@ -106,16 +115,16 @@ def movie_stats():
     worst_movies = [(movie["title"], movie["rating"]) for movie in movies if float(movie["rating"]) == worst_rating]
 
     print(f"Average rating: {round(average_rating, 1)}")
-    print(f"Median ratinig: {round(median_rating, 1)}")
+    print(f"Median rating: {round(median_rating, 1)}")
     print(f"Best movie(s): {get_printable_string_from_tuple(best_movies)}")
     print(f"Worst movie(s): {get_printable_string_from_tuple(worst_movies)}")
 
 
 def random_movie():
     """
-    uses the random module to get a pseudo-random entry from the movies list and prints it.
+    Uses the random module to get a pseudo-random entry from the movies list and prints it.
     """
-    movies = movie_storage.get_movies_data()
+    movies = storage.list_movies()
     random_movie_dictionary = random.choice(movies)
     title = random_movie_dictionary["title"]
     rating = random_movie_dictionary["rating"]
@@ -124,16 +133,10 @@ def random_movie():
 
 def search_movie():
     """
-    Gets movies data from movie_storage.get_movies_data() and asks user to enter part
-    of a movie name.
-    Creates a list of tuples to save all movies and their index in a list of tuples.
-    Then iterates over the created list and checks if user search term is part of any movie name,
-    if that's the case it saves this movies index in a different list.
-    At the end it checks if there were any matching movies found, if not user gets a error message.
-    If any movie(s) were found it iterates over the movies list of dictionaries and prints out every movie with
-    a matching index from the matching_movies_by_index list.
+    Gets movies data from storage.list_movies() and asks user to enter part
+    of a movie name. Prints out the matching movies.
     """
-    movies = movie_storage.get_movies_data()
+    movies = storage.list_movies()
     user_search_term = input("Enter part of movie name: ")
     all_movie_titles_with_index = [(i, movie["title"]) for i, movie in enumerate(movies)]
 
@@ -147,27 +150,26 @@ def search_movie():
     else:
         for i, movie in enumerate(movies):
             if i in matching_movie_by_index:
-                print(f"{movie["title"]} ({movie["year"]}): {movie["rating"]}")
+                print(f"{movie['title']} ({movie['year']}): {movie['rating']}")
 
 
 def movies_sorted_by_rating():
     """
-    uses sorted() function to create a list of movies sorted by their rating.
+    Uses sorted() function to create a list of movies sorted by their rating.
     Next it iterates over said list and prints out all movies with their info.
     """
-    movies = movie_storage.get_movies_data()
-    movies_sorted_by_rating_list = sorted(movies, key = lambda x: x["rating"], reverse = True)
+    movies = storage.list_movies()
+    movies_sorted_by_rating_list = sorted(movies, key=lambda x: x["rating"], reverse=True)
     for movie in movies_sorted_by_rating_list:
-        print(f"{movie["title"]} ({movie["year"]}): {movie["rating"]}")
+        print(f"{movie['title']} ({movie['year']}): {movie['rating']}")
 
 
 def movies_sorted_by_year():
     """
-    Asks user for sorting order.
-    Then uses sorted() function to create a list of movies sorted by their release year.
-    Next it iterates over said list and prints out all movies with their info.
+    Asks user for sorting order. Uses sorted() function to create a list of movies
+    sorted by their release year. Next it iterates over said list and prints out all movies with their info.
     """
-    movies = movie_storage.get_movies_data()
+    movies = storage.list_movies()
     descending_order = False
     while True:
         user_choice = input("Do you want the latest movies first? (Y/N)\n")
@@ -179,21 +181,20 @@ def movies_sorted_by_year():
         else:
             print("Please enter 'Y' or 'N'")
 
-    movies_sorted_by_year_list = sorted(movies, key=lambda x: x["year"], reverse = descending_order)
+    movies_sorted_by_year_list = sorted(movies, key=lambda x: x["year"], reverse=descending_order)
     for movie in movies_sorted_by_year_list:
-        print(f"{movie["title"]} ({movie["year"]}): {movie["rating"]}")
+        print(f"{movie['title']} ({movie['year']}): {movie['rating']}")
 
 
 def filter_movies():
     """
     Asks user for filter criteria, validates input with get_float_input() and get_int_input()
-    and creates a new list with filter applied.
-    If there are movies matching the filter prints them out, if not it prints a error message.
+    and creates a new list with filter applied. If there are movies matching the filter, prints them out.
     """
-    movies = movie_storage.get_movies_data()
+    movies = storage.list_movies()
     minimum_rating = get_float_input("Enter minimum rating, leave blank for no filter: ")
     start_year = get_int_input("Enter start year, leave blank for no filter: ")
-    end_year = get_float_input("Enter end year, leave blank for no filter: ")
+    end_year = get_int_input("Enter end year, leave blank for no filter: ")
 
     filtered_movies = []
     for movie in movies:
@@ -208,7 +209,7 @@ def filter_movies():
     if filtered_movies:
         print("Filtered movies:")
         for movie in filtered_movies:
-            print(f"{movie["title"]} ({movie["year"]}): {movie["rating"]}")
+            print(f"{movie['title']} ({movie['year']}): {movie['rating']}")
     else:
         print("\nThere are no movies with your filters applied.")
 
@@ -229,7 +230,7 @@ def get_printable_string_from_tuple(a_list: list) -> str:
 
 def get_float_input(prompt: str):
     """
-    validates user input if its empty or able to convert into float
+    Validates user input if it's empty or able to convert into float.
     :return: None or Converted Input
     """
     while True:
@@ -244,7 +245,7 @@ def get_float_input(prompt: str):
 
 def get_int_input(prompt: str):
     """
-    validates user input if its empty or able to convert into integer
+    Validates user input if it's empty or able to convert into integer.
     :return: None or Converted Input
     """
     while True:
@@ -259,11 +260,11 @@ def get_int_input(prompt: str):
 
 def print_menu(function_dict: dict):
     """
-    prints a function dictionary as a menu
+    Prints a function dictionary as a menu.
     """
     print("Menu:")
     for key, value in function_dict.items():
-        print(f"{key}. {value["name"]}")
+        print(f"{key}. {value['name']}")
 
 
 def main():
@@ -315,11 +316,11 @@ def main():
     }
     print("--------- Welcome to my Movies Database! ---------")
     while True:
-        movie_storage.get_movies_data()
+        storage.list_movies()
         print_menu(FUNCTION_DICTIONARY)
         user_choice = input("Enter Choice (0-10): ")
         if user_choice == "0":
-            print("bye bye! :>")
+            print("Bye bye! :>")
             FUNCTION_DICTIONARY[user_choice]["function"]()
         elif user_choice in FUNCTION_DICTIONARY:
             print()
