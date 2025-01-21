@@ -1,7 +1,7 @@
 from storage.storage_json import StorageJson
 
 # Create an instance of StorageJson with a sample JSON file
-storage = StorageJson('movies.json')
+storage = StorageJson('data/movies.json')
 
 # List movies
 print(storage.list_movies())
