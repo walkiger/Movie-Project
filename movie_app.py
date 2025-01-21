@@ -294,6 +294,7 @@ class MovieApp:
         template_path = os.path.join('_static', 'index_template.html')
         output_path = 'index.html'
 
+        # Verify that the template file exists
         if not os.path.exists(template_path):
             print(f"Error: Template file not found at {template_path}")
             return
@@ -301,8 +302,10 @@ class MovieApp:
         with open(template_path, 'r') as file:
             template_content = file.read()
 
+        # Replace the __TEMPLATE_TITLE__ placeholder
         template_content = template_content.replace("__TEMPLATE_TITLE__", "My Movie Collection")
 
+        # Generate the movie grid HTML
         movie_grid_html = ""
         movies = self._storage.list_movies()
         for title, details in movies.items():
@@ -314,12 +317,16 @@ class MovieApp:
             </div>
             """
 
+        # Replace the __TEMPLATE_MOVIE_GRID__ placeholder
         template_content = template_content.replace("__TEMPLATE_MOVIE_GRID__", movie_grid_html)
 
+        # Write the generated content to the output file
         with open(output_path, 'w') as file:
             file.write(template_content)
 
-        print("Website was generated successfully.")
+        # Print the full path of the generated file
+        full_output_path = os.path.abspath(output_path)
+        print(f"Website was generated successfully at {full_output_path}")
 
 
     def _get_printable_string_from_tuple(self, a_list):
