@@ -1,22 +1,23 @@
-import json
+import csv
 from .istorage import IStorage
 
-class StorageJson(IStorage):
+
+class StorageCsv(IStorage):
     """
-    A class to represent storage for movies using JSON format.
+    A class to represent storage for movies using CSV format.
     """
 
-    def __init__(self, file_path='data/movies.json'):
+    def __init__(self, file_path='data/movies.csv'):
         """
-        Initialize the StorageJson with the given file path.
+        Initialize the StorageCsv with the given file path.
 
-        :param file_path: Path to the JSON file.
+        :param file_path: Path to the CSV file.
         """
         self.file_path = file_path
 
     def validate_existence(self):
         """
-        Validate if the JSON file exists.
+        Validate if the CSV file exists.
 
         :return: True if file exists, False otherwise.
         """
@@ -30,56 +31,58 @@ class StorageJson(IStorage):
 
     def validate_data(self) -> bool:
         """
-        Validate the data in the JSON file.
+        Validate the data in the CSV file.
 
         :return: True if data is valid, False otherwise.
         """
         if self.validate_existence():
             try:
-                with open(self.file_path, "r") as json_file:
-                    data = json.load(json_file)
+                with open(self.file_path, "r") as csv_file:
+                    reader = csv.DictReader(csv_file)
+                    data = list(reader)
                     if len(data) >= 1:
                         return True
-            except json.decoder.JSONDecodeError:
-                print("File data missing or corrupted, creating default data")
+            except Exception as e:
+                print(f"Error reading CSV file: {e}")
                 self.write_default_data()
                 return False
         return False
 
     def write_default_data(self):
         """
-        Write default data to the JSON file.
+        Write default data to the CSV file.
         """
-        default_data = [{
-            "title": "Fight Club",
-            "year": 1999,
-            "rating": 8.8
-        }]
-        with open(self.file_path, "w") as file_writer:
-            json.dump(default_data, file_writer, indent=4)
+        default_data = [
+            {"title": "Fight Club", "year": 1999, "rating": 8.8}
+        ]
+        with open(self.file_path, "w", newline='') as csv_file:
+            fieldnames = ["title", "year", "rating"]
+            writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(default_data)
 
     def list_movies(self):
         """
-        List all movies from the JSON file.
+        List all movies from the CSV file.
 
         :return: Dictionary of movies.
         """
         movies = {}
         if self.validate_data():
-            with open(self.file_path, "r") as json_file:
-                data = json.load(json_file)
-                for movie in data:
-                    title = movie["title"]
+            with open(self.file_path, "r") as csv_file:
+                reader = csv.DictReader(csv_file)
+                for row in reader:
+                    title = row["title"]
                     movies[title] = {
-                        "year": movie["year"],
-                        "rating": movie["rating"],
-                        "poster": movie.get("poster", "")
+                        "year": int(row["year"]),
+                        "rating": float(row["rating"]),
+                        "poster": row.get("poster", "")
                     }
         return movies
 
     def add_movie(self, title, year, rating, poster):
         """
-        Add a new movie to the JSON file.
+        Add a new movie to the CSV file.
 
         :param title: Title of the movie.
         :param year: Release year of the movie.
@@ -92,7 +95,7 @@ class StorageJson(IStorage):
 
     def delete_movie(self, title):
         """
-        Delete a movie from the JSON file.
+        Delete a movie from the CSV file.
 
         :param title: Title of the movie to delete.
         """
@@ -103,7 +106,7 @@ class StorageJson(IStorage):
 
     def update_movie(self, title, rating):
         """
-        Update the rating of an existing movie in the JSON file.
+        Update the rating of an existing movie in the CSV file.
 
         :param title: Title of the movie to update.
         :param rating: New rating of the movie.
@@ -115,11 +118,15 @@ class StorageJson(IStorage):
 
     def _save_movies(self, movies):
         """
-        Save movies to the JSON file.
+        Save movies to the CSV file.
 
         :param movies: Dictionary of movies to save.
         """
-        data = [{"title": title, "year": details["year"], "rating": details["rating"], "poster": details.get("poster", "")}
-                for title, details in movies.items()]
-        with open(self.file_path, "w") as json_file:
-            json.dump(data, json_file, indent=4)
+        with open(self.file_path, "w", newline='') as csv_file:
+            fieldnames = ["title", "year", "rating", "poster"]
+            writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+            writer.writeheader()
+            for title, details in movies.items():
+                row = {"title": title, "year": details["year"], "rating": details["rating"],
+                       "poster": details["poster"]}
+                writer.writerow(row)

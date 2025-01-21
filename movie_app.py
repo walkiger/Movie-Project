@@ -11,17 +11,19 @@ class MovieApp:
         """
         self._storage = storage
 
+
     def _command_list_movies(self):
         """
         List all movies in the storage and print their details.
         """
         movies = self._storage.list_movies()
         print(f"{len(movies)} movies in total")
-        for movie in movies:
-            movie_name = movie["title"]
-            movie_rating = movie["rating"]
-            movie_year = movie["year"]
+        for title, details in movies.items():
+            movie_name = title
+            movie_rating = details.get("rating", "N/A")
+            movie_year = details.get("year", "N/A")
             print(f"{movie_name} ({movie_year}): {movie_rating}")
+
 
     def _command_add_movie(self):
         """
@@ -57,6 +59,7 @@ class MovieApp:
         except Exception as e:
             print(e)
 
+
     def _command_delete_movie(self):
         """
         Prompt the user to delete a movie from the storage.
@@ -71,12 +74,13 @@ class MovieApp:
         else:
             print(f"Movie {user_input_movie_name} doesn't exist!")
 
+
     def _command_update_movie(self):
         """
         Prompt the user to update the rating of an existing movie in the storage.
         """
         movies = self._storage.list_movies()
-        movie_titles = [movie["title"] for movie in movies]
+        movie_titles = list(movies.keys())
         user_input_movie_name = input("Enter name of movie you want to update: ")
 
         if user_input_movie_name in movie_titles:
@@ -91,18 +95,20 @@ class MovieApp:
         else:
             print(f"Movie {user_input_movie_name} doesn't exist!")
 
+
     def _command_movie_stats(self):
         """
         Calculate and print statistics for the movies in storage,
         including average rating, median rating, and best/worst movies.
         """
         movies = self._storage.list_movies()
-        print(f"Movies: {movies}")  # Debug print
-        rating_list = [float(movie["rating"]) for movie in movies]
+        # print(f"Movies: {movies}")  # Debug print
 
-        if not rating_list:
+        if not movies:
             print("No movies available to calculate statistics.")
             return
+
+        rating_list = [float(details["rating"]) for details in movies.values()]
 
         average_rating = sum(rating_list) / len(rating_list)
         median_rating = statistics.median(rating_list)
@@ -110,106 +116,160 @@ class MovieApp:
         best_rating = max(rating_list)
         worst_rating = min(rating_list)
 
-        best_movies = [(movie["title"], movie["rating"]) for movie in movies if float(movie["rating"]) == best_rating]
-        worst_movies = [(movie["title"], movie["rating"]) for movie in movies if float(movie["rating"]) == worst_rating]
+        best_movies = [
+            (title, details["rating"]) for title, details in movies.items()
+            if float(details["rating"]) == best_rating
+        ]
+        worst_movies = [
+            (title, details["rating"]) for title, details in movies.items()
+            if float(details["rating"]) == worst_rating
+        ]
 
         print(f"Average rating: {round(average_rating, 1)}")
         print(f"Median rating: {round(median_rating, 1)}")
         print(f"Best movie(s): {self._get_printable_string_from_tuple(best_movies)}")
         print(f"Worst movie(s): {self._get_printable_string_from_tuple(worst_movies)}")
 
+
     def _command_random_movie(self):
         """
         Pick a random movie from the storage and print its details.
         """
         movies = self._storage.list_movies()
-        print(f"Movies: {movies}")  # Debug print
+        # print(f"Movies: {movies}")  # Debug print
 
         if not movies:
             print("No movies available to pick a random movie.")
             return
 
-        random_movie_dictionary = random.choice(movies)
-        title = random_movie_dictionary["title"]
-        rating = random_movie_dictionary["rating"]
+        # Convert dictionary items to a list of tuples
+        movie_items = list(movies.items())
+        random_movie_tuple = random.choice(movie_items)
+        title = random_movie_tuple[0]
+        details = random_movie_tuple[1]
+        rating = details["rating"]
         print(f"You could watch this movie: {title}, it's rated {rating}")
 
 
     def _command_search_movie(self):
         """
-        Search for movies in the storage by a user-provided search term.
+        Prompt the user to search for a movie by title.
+        The search is case-insensitive and matches partial titles.
         """
         movies = self._storage.list_movies()
-        user_search_term = input("Enter part of movie name: ")
-        all_movie_titles_with_index = [(i, movie["title"]) for i, movie in enumerate(movies)]
+        user_input_movie_name = input("Enter part of movie name: ").strip()
 
-        matching_movie_by_index = []
-        for index, movie_title in enumerate(all_movie_titles_with_index):
-            if user_search_term.lower() in str(movie_title[1]).lower():
-                matching_movie_by_index.append(index)
+        matching_movies = {
+            title: details for title, details in movies.items()
+            if user_input_movie_name.lower() in title.lower()
+        }
 
-        if len(matching_movie_by_index) == 0:
-            print("Movie name not found!")
-        else:
-            for i, movie in enumerate(movies):
-                if i in matching_movie_by_index:
-                    print(f"{movie['title']} ({movie['year']}): {movie['rating']}")
+        if not matching_movies:
+            print(f"No matches found for '{user_input_movie_name}'.")
+            return
+
+        all_movie_titles_with_index = [
+            (i, title) for i, title in enumerate(matching_movies.keys(), start=1)
+        ]
+        for index, title in all_movie_titles_with_index:
+            print(f"{index}. {title}")
+
+        while True:
+            try:
+                selected_index = input(
+                    "Enter the number of the movie you want details for (leave empty to list all): "
+                ).strip()
+                if selected_index == "":
+                    print("Listing all matching movies:")
+                    for title, details in matching_movies.items():
+                        print(f"\nTitle: {title}")
+                        print(f"Year: {details['year']}")
+                        print(f"Rating: {details['rating']}")
+                        print(f"Poster: {details.get('poster', 'N/A')}")
+                    break
+                else:
+                    selected_index = int(selected_index) - 1
+                    if selected_index < 0 or selected_index >= len(all_movie_titles_with_index):
+                        raise IndexError
+
+                    selected_title = all_movie_titles_with_index[selected_index][1]
+                    selected_movie = matching_movies[selected_title]
+
+                    print(f"\nTitle: {selected_movie['title']}")
+                    print(f"Year: {selected_movie['year']}")
+                    print(f"Rating: {selected_movie['rating']}")
+                    print(f"Poster: {selected_movie.get('poster', 'N/A')}")
+                    break
+            except (ValueError, IndexError):
+                print("Invalid input. Please enter a valid number corresponding to the movie.")
 
     def _command_movies_sorted_by_rating(self):
         """
-        List all movies sorted by their rating in descending order.
+        Print movies sorted by rating in descending order.
         """
         movies = self._storage.list_movies()
-        movies_sorted_by_rating_list = sorted(movies, key=lambda x: x["rating"], reverse=True)
-        for movie in movies_sorted_by_rating_list:
-            print(f"{movie['title']} ({movie['year']}): {movie['rating']}")
+        if not movies:
+            print("No movies available to sort.")
+            return
+
+        # Sort movies by rating in descending order
+        movies_sorted_by_rating_list = sorted(
+            movies.items(), key=lambda item: item[1]["rating"], reverse=True
+        )
+
+        for index, (title, details) in enumerate(movies_sorted_by_rating_list, start=1):
+            print(f"{index}. {title} ({details['year']}): {details['rating']}")
 
     def _command_movies_sorted_by_year(self):
         """
-        List all movies sorted by their release year.
-        The user can choose the sorting order (ascending or descending).
+        Print movies sorted by year in ascending or descending order.
         """
         movies = self._storage.list_movies()
-        descending_order = False
-        while True:
-            user_choice = input("Do you want the latest movies first? (Y/N)\n")
-            if user_choice.lower() == "y":
-                descending_order = True
-                break
-            elif user_choice.lower() == "n":
-                break
-            else:
-                print("Please enter 'Y' or 'N'")
+        if not movies:
+            print("No movies available to sort.")
+            return
 
-        movies_sorted_by_year_list = sorted(movies, key=lambda x: x["year"], reverse=descending_order)
-        for movie in movies_sorted_by_year_list:
-            print(f"{movie['title']} ({movie['year']}): {movie['rating']}")
+        descending_order = input("Do you want the latest movies first? (Y/N): ").strip().lower() == "y"
+
+        # Sort movies by year
+        movies_sorted_by_year_list = sorted(
+            movies.items(), key=lambda item: item[1]["year"], reverse=descending_order
+        )
+
+        for index, (title, details) in enumerate(movies_sorted_by_year_list, start=1):
+            print(f"{index}. {title} ({details['year']}): {details['rating']}")
 
     def _command_filter_movies(self):
         """
-        Filter movies based on user-provided criteria (minimum rating, start year, end year).
+        Filter and print movies based on user-provided rating and year range.
         """
         movies = self._storage.list_movies()
-        minimum_rating = self._get_float_input("Enter minimum rating, leave blank for no filter: ")
-        start_year = self._get_int_input("Enter start year, leave blank for no filter: ")
-        end_year = self._get_int_input("Enter end year, leave blank for no filter: ")
+        if not movies:
+            print("No movies available to filter.")
+            return
 
-        filtered_movies = []
-        for movie in movies:
-            if minimum_rating is not None and movie["rating"] < minimum_rating:
-                continue
-            if start_year is not None and movie["year"] < start_year:
-                continue
-            if end_year is not None and movie["year"] > end_year:
-                continue
-            filtered_movies.append(movie)
+        min_rating_input = input("Enter minimum rating, leave blank for no filter: ").strip()
+        start_year_input = input("Enter start year, leave blank for no filter: ").strip()
+        end_year_input = input("Enter end year, leave blank for no filter: ").strip()
 
-        if filtered_movies:
-            print("Filtered movies:")
-            for movie in filtered_movies:
-                print(f"{movie['title']} ({movie['year']}): {movie['rating']}")
-        else:
-            print("\nThere are no movies with your filters applied.")
+        minimum_rating = float(min_rating_input) if min_rating_input else None
+        start_year = int(start_year_input) if start_year_input else None
+        end_year = int(end_year_input) if end_year_input else None
+
+        filtered_movies = {
+            title: details for title, details in movies.items()
+            if (minimum_rating is None or details["rating"] >= minimum_rating) and
+               (start_year is None or details["year"] >= start_year) and
+               (end_year is None or details["year"] <= end_year)
+        }
+
+        if not filtered_movies:
+            print("No movies found matching the filters.")
+            return
+
+        for index, (title, details) in enumerate(filtered_movies.items(), start=1):
+            print(f"{index}. {title} ({details['year']}): {details['rating']}")
+
 
     def _get_printable_string_from_tuple(self, a_list):
         """
@@ -226,6 +286,7 @@ class MovieApp:
         else:
             return f"{a_list[0][0]}, {a_list[0][1]}"
 
+
     def _get_float_input(self, prompt):
         """
         Prompt the user for a float input, validate, and return the value.
@@ -241,6 +302,7 @@ class MovieApp:
                 return float(user_input)
             except ValueError:
                 print("Invalid, please enter a number!")
+
 
     def _get_int_input(self, prompt):
         """
