@@ -12,8 +12,9 @@ This project is a movie management application that allows users to list, add, d
 ### Installation
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/movies_project.git
-   cd movies_project```
+   git clone https://github.com/walkiger/Movie-Project.git
+   cd movies_project
+   ```
 2. Install the required packages:
    ```bash
    pip install -r requirements.txt
@@ -21,7 +22,6 @@ This project is a movie management application that allows users to list, add, d
 3. Create a config.py file in the root directory and add your OMDb API key:
     ```python
    OMDB_API_KEY = 'your_api_key_here'
-
    ```
 ### Usage
 1. Run the application:
