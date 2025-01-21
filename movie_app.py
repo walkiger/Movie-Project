@@ -2,6 +2,7 @@ import random
 import statistics
 import requests
 import os
+from config import OMDB_API_KEY
 
 
 class MovieApp:
@@ -26,7 +27,6 @@ class MovieApp:
             movie_year = details.get("year", "N/A")
             print(f"{movie_name} ({movie_year}): {movie_rating}")
 
-    import requests
 
     def _command_add_movie(self):
         """
@@ -34,7 +34,7 @@ class MovieApp:
         and save the movie details in the data structure.
         """
         movie_title = input("Enter movie title: ").strip()
-        api_key = "4bebaea"
+        api_key = OMDB_API_KEY
         base_url = "http://www.omdbapi.com/"
         params = {
             "apikey": api_key,
