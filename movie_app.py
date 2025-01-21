@@ -1,6 +1,7 @@
 import random
 import statistics
 import requests
+import os
 
 
 class MovieApp:
@@ -286,6 +287,41 @@ class MovieApp:
             print(f"{index}. {title} ({details['year']}): {details['rating']}")
 
 
+    def _command_generate_website(self):
+        """
+        Generate a website with the list of movies.
+        """
+        template_path = os.path.join('_static', 'index_template.html')
+        output_path = 'index.html'
+
+        if not os.path.exists(template_path):
+            print(f"Error: Template file not found at {template_path}")
+            return
+
+        with open(template_path, 'r') as file:
+            template_content = file.read()
+
+        template_content = template_content.replace("__TEMPLATE_TITLE__", "My Movie Collection")
+
+        movie_grid_html = ""
+        movies = self._storage.list_movies()
+        for title, details in movies.items():
+            movie_grid_html += f"""
+            <div class="movie-item">
+                <h2>{title} ({details['year']})</h2>
+                <p>Rating: {details['rating']}</p>
+                <img src="{details['poster']}" alt="Poster for {title}">
+            </div>
+            """
+
+        template_content = template_content.replace("__TEMPLATE_MOVIE_GRID__", movie_grid_html)
+
+        with open(output_path, 'w') as file:
+            file.write(template_content)
+
+        print("Website was generated successfully.")
+
+
     def _get_printable_string_from_tuple(self, a_list):
         """
         Convert a list of tuples into a string for printing.
@@ -394,13 +430,17 @@ class MovieApp:
             "10": {
                 "function": self._command_filter_movies,
                 "name": "Filter movies"
+            },
+            "11": {
+                "function": self._command_generate_website,
+                "name": "Generate website"
             }
         }
         print("--------- Welcome to my Movies Database! ---------")
         while True:
             self._storage.list_movies()
             self._print_menu(FUNCTION_DICTIONARY)
-            user_choice = input("Enter Choice (0-10): ")
+            user_choice = input("Enter Choice (0-11): ")
             if user_choice == "0":
                 print("Bye bye! :>")
                 FUNCTION_DICTIONARY[user_choice]["function"]()
